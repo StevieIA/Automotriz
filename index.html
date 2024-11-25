@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>AutomotrizIA</title>
+    <!-- Agregar enlace a Google Fonts para una tipografía mejor -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+    <style>
+        /* Reiniciar estilos básicos */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+        h1 {
+            text-align: center;
+            color: #444;
+            margin: 20px 0;
+        }
+        #chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #chat {
+            padding: 20px;
+            height: 400px;
+            overflow-y: scroll;
+        }
+        #chat .mensaje {
+            margin: 10px 0;
+            display: flex;
+        }
+        #chat .usuario {
+            justify-content: flex-end;
+        }
+        #chat .bot {
+            justify-content: flex-start;
+        }
+        .mensaje .contenido {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            position: relative;
+            word-wrap: break-word;
+        }
+        .usuario .contenido {
+            background-color: #dcf8c6;
+            color: #000;
+            border-bottom-right-radius: 0;
+        }
+        .bot .contenido {
+            background-color: #ececec;
+            color: #000;
+            border-bottom-left-radius: 0;
+        }
+        #entrada {
+            display: flex;
+            padding: 15px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+        }
+        #entrada input[type="text"] {
+            flex: 1;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+        #entrada button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background-color: #009688;
+            color: #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.3s;
+        }
+        #entrada button:hover {
+            background-color: #00796b;
+        }
+    </style>
+</head>
+<body>
+    <h1>AutomotrizIA</h1>
+    <div id="chat-container">
+        <div id="chat"></div>
+        <div id="entrada">
+            <input type="text" id="mensaje" placeholder="Escribe un mensaje..." />
+            <button onclick="enviarMensaje()">Enviar</button>
+        </div>
+    </div>
+
+    <!-- Librerías para manejar Markdown y sanear HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.10/purify.min.js"></script>
+
+    <script>
+        async function enviarMensaje() {
+            const input = document.getElementById('mensaje');
+            const mensaje = input.value.trim();
+            if (mensaje === '') return;
+
+            // Mostrar el mensaje del usuario inmediatamente
+            agregarMensajeAlChat('usuario', mensaje);
+
+            input.value = '';
+
+            try {
+                // Enviar el mensaje al servidor
+                const response = await fetch('/enviar-mensaje', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ mensaje }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Mostrar la respuesta del bot
+                    agregarMensajeAlChat('bot', data.respuesta);
+                } else {
+                    agregarMensajeAlChat('bot', 'Error al obtener respuesta del servidor.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                agregarMensajeAlChat('bot', 'Error de conexión con el servidor.');
+            }
+        }
+
+        function agregarMensajeAlChat(de, texto) {
+            const chat = document.getElementById('chat');
+            const mensajeDiv = document.createElement('div');
+            mensajeDiv.classList.add('mensaje', de);
+
+            const contenidoDiv = document.createElement('div');
+            contenidoDiv.classList.add('contenido');
+
+            // Convertir Markdown a HTML y sanearlo
+            const htmlSinSanear = marked.parse(texto);
+            const htmlSeguro = DOMPurify.sanitize(htmlSinSanear);
+
+            contenidoDiv.innerHTML = htmlSeguro;
+            mensajeDiv.appendChild(contenidoDiv);
+            chat.appendChild(mensajeDiv);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Cargar el historial al inicio
+        async function cargarHistorial() {
+            const response = await fetch('/mensajes');
+            const mensajes = await response.json();
+
+            mensajes.forEach(m => {
+                agregarMensajeAlChat(m.de, m.texto);
+            });
+        }
+
+        cargarHistorial();
+    </script>
+</body>
+</html>
