@@ -2,8 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios'); // Importamos axios
 const path = require('path');
+const cors = require('cors'); // Importamos cors
 
 const app = express();
+
+// Configurar CORS para permitir solicitudes desde el frontend
+app.use(cors({
+    origin: 'https://automotrizfrontend-production.up.railway.app', // Reemplaza con la URL de tu frontend
+}));
 
 // Configurar body-parser para parsear JSON
 app.use(bodyParser.json());
