@@ -29,7 +29,7 @@ app.post('/enviar-mensaje', async (req, res) => {
     console.log('Mensaje del usuario:', mensajeUsuario);
 
     // Guardar el mensaje del usuario
-    mensajes.push({ de: 'usuario', texto: mensajeUsuario });
+    mensajes.push({ de: 'usuario', texto: mensajeUsuario, hora: new Date() });
 
     try {
         // Enviar el mensaje al webhook de n8n
@@ -40,7 +40,7 @@ app.post('/enviar-mensaje', async (req, res) => {
         console.log('Respuesta del webhook:', respuestaBot);
 
         // Guardar la respuesta del bot
-        mensajes.push({ de: 'bot', texto: respuestaBot });
+        mensajes.push({ de: 'bot', texto: respuestaBot, hora: new Date() });
 
         // Enviar la respuesta al cliente
         res.json({ respuesta: respuestaBot });
@@ -52,8 +52,16 @@ app.post('/enviar-mensaje', async (req, res) => {
 
 // Endpoint para obtener los mensajes
 app.get('/mensajes', (req, res) => {
-    res.json(mensajes);
-});
+    // Asegurarse de que todos los mensajes tienen la propiedad 'hora'
+    const mensajesConHora = mensajes.map(msg => {
+      if (!msg.hora) {
+        return { ...msg, hora: new Date() }; // O asignar una hora predeterminada
+      }
+      return msg;
+    });
+  
+    res.json(mensajesConHora);
+  });  
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
